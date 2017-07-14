@@ -17,9 +17,26 @@ try {
     }
     $input_failOnStderr = Get-VstsInput -Name 'failOnStderr' -AsBool
     $input_ignoreLASTEXITCODE = Get-VstsInput -Name 'ignoreLASTEXITCODE' -AsBool
-    $input_script = Get-VstsInput -Name 'script'
     $input_workingDirectory = Get-VstsInput -Name 'workingDirectory' -Require
     Assert-VstsPath -LiteralPath $input_workingDirectory -PathType 'Container'
+    $input_targetType = Get-VstsInput -Name 'targetType'
+    if ("$input_targetType".ToUpperInvariant() -eq "FILEPATH") {
+        $input_filePath = Get-VstsInput -Name 'filePath' -Require
+        try {
+            Assert-VstsPath -LiteralPath $input_filePath -PathType Leaf
+        } catch {
+            Write-Error (Get-VstsLocString -Key 'PS_InvalidFilePath' -ArgumentList $input_filePath)
+        }
+
+        if (!$input_filePath.ToUpperInvariant().EndsWith('.PS1')) {
+            Write-Error (Get-VstsLocString -Key 'PS_InvalidFilePath' -ArgumentList $input_filePath)
+        }
+
+        $input_arguments = Get-VstsInput -Name 'arguments'
+        $input_script = ". '$("$input_filePath".Replace("'", "''"))' $input_arguments".Trim()
+    } else {
+        $input_script = Get-VstsInput -Name 'script'
+    }
 
     # Generate the script contents.
     $contents = @()

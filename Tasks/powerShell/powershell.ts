@@ -21,8 +21,21 @@ async function run() {
         }
         let failOnStderr = tl.getBoolInput('failOnStderr', false);
         let ignoreLASTEXITCODE = tl.getBoolInput('ignoreLASTEXITCODE', false);
-        let script: string = tl.getInput('script', false) || '';
         let workingDirectory = tl.getPathInput('workingDirectory', /*required*/ true, /*check*/ true);
+        let script: string;
+        let targetType: string = tl.getInput('targetType') || '';
+        if (targetType.toUpperCase() == 'FILEPATH') {
+            let filePath: string = tl.getPathInput('filePath', /*required*/ true);
+            if (!tl.stats(filePath).isFile() || !filePath.toUpperCase().match(/\.PS1$/)) {
+                throw new Error(tl.loc('JS_InvalidFilePath', filePath));
+            }
+
+            let args: string = tl.getInput('arguments') || '';
+            script = `. '${filePath.replace("'", "''")}' ${args}`.trim();
+        }
+        else {
+            script = tl.getInput('script', false) || '';
+        }
 
         // Generate the script contents.
         let contents: string[] = [];
